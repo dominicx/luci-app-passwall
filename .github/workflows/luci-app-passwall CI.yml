@@ -82,5 +82,5 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         #name: ${{ format('{0}', github.workflow) }}
-        name: ${{ format('{0}', evn.VER) }}
+        name: ${{ format('{0}', env.VER) }}
         path: ../bin
