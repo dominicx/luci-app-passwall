@@ -71,16 +71,8 @@ jobs:
         mkdir ../bin
         find bin/ -type f -name "*${PKGN}*" | xargs -t -i mv -vf {} ../bin
     
-    - name: Init version number
-      run: |
-        echo ''>abi-prev-5.3.18-2-pve
-        echo "::set-env name=VER::$(ls abi* | sed  's/abi-prev/pve-kernel/g')"
-        echo ${{ env.VER }}
-        
-        
     - name: Upload - push to artifact file
       uses: actions/upload-artifact@v1
       with:
-        #name: ${{ format('{0}', github.workflow) }}
-        name: ${{ format('{0}', env.VER) }}
+        name: ${{ format('{0}', github.workflow) }}
         path: ../bin
