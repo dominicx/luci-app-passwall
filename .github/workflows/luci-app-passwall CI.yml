@@ -1,4 +1,4 @@
-name: luci-app-passwall CI
+name: luci-app-passwall
 on:
   release:
     types: published

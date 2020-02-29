@@ -120,52 +120,42 @@ function status()
     e.haproxy_status = luci.sys.call(string.format(
                                          "ps -w | grep -v grep | grep '%s/bin/' | grep haproxy >/dev/null",
                                          appname)) == 0
-    e.kcptun_status = luci.sys.call(
-                          "ps -w | grep -v grep | grep -i 'log /var/etc/" ..
-                              appname .. "/kcptun' >/dev/null") == 0
-
     local tcp_node_num = luci.sys.exec(
                              "echo -n `uci -q get %s.@global_other[0].tcp_node_num`" %
                                  appname)
     for i = 1, tcp_node_num, 1 do
-        local listen_port = luci.sys.exec(
-                                string.format(
-                                    "[ -f '/var/etc/passwall/port/TCP_%s' ] && echo -n `cat /var/etc/passwall/port/TCP_%s`",
-                                    i, i))
+        e["kcptun_tcp_node%s_status" % i] =
+            luci.sys.call(string.format(
+                              "ps -w | grep -v grep | grep '%s/bin/' | grep 'kcptun_tcp_%s' >/dev/null",
+                              appname, i)) == 0
         e["tcp_node%s_status" % i] = luci.sys.call(
                                          string.format(
-                                             "ps -w | grep -v grep | grep '%s/bin/' | grep -i -E 'TCP_%s|brook tproxy -l 0.0.0.0:%s|ipt2socks -T -l %s' >/dev/null",
-                                             appname, i, listen_port,
-                                             listen_port)) == 0
+                                             "ps -w | grep -v grep | grep '%s/bin/' | grep -i -E 'TCP_%s|brook_tcp_%s|ipt2socks_tcp_%s' >/dev/null",
+                                             appname, i, i, i)) == 0
     end
 
     local udp_node_num = luci.sys.exec(
                              "echo -n `uci -q get %s.@global_other[0].udp_node_num`" %
                                  appname)
     for i = 1, udp_node_num, 1 do
-        local listen_port = luci.sys.exec(
-                                string.format(
-                                    "[ -f '/var/etc/passwall/port/UDP_%s' ] && echo -n `cat /var/etc/passwall/port/UDP_%s`",
-                                    i, i))
         e["udp_node%s_status" % i] = luci.sys.call(
                                          string.format(
-                                             "ps -w | grep -v grep | grep '%s/bin/' | grep -i -E 'UDP_%s|brook tproxy -l 0.0.0.0:%s|ipt2socks -U -l %s' >/dev/null",
-                                             appname, i, listen_port,
-                                             listen_port)) == 0
+                                             "ps -w | grep -v grep | grep '%s/bin/' | grep -i -E 'UDP_%s|brook_udp_%s|ipt2socks_udp_%s' >/dev/null",
+                                             appname, i, i, i)) == 0
     end
 
     local socks5_node_num = luci.sys.exec(
                                 "echo -n `uci -q get %s.@global_other[0].socks5_node_num`" %
                                     appname)
     for i = 1, socks5_node_num, 1 do
-        local listen_port = luci.sys.exec(
-                                string.format(
-                                    "[ -f '/var/etc/passwall/port/SOCKS5_%s' ] && echo -n `cat /var/etc/passwall/port/SOCKS5_%s`",
-                                    i, i))
+        e["kcptun_socks_node%s_status" % i] =
+            luci.sys.call(string.format(
+                              "ps -w | grep -v grep | grep '%s/bin/' | grep 'kcptun_socks_%s' >/dev/null",
+                              appname, i)) == 0
         e["socks5_node%s_status" % i] = luci.sys.call(
                                             string.format(
-                                                "ps -w | grep -v grep | grep '%s/bin/' | grep -i -E 'SOCKS5_%s|brook client -l 0.0.0.0:%s' >/dev/null",
-                                                appname, i, listen_port)) == 0
+                                                "ps -w | grep -v grep | grep '%s/bin/' | grep -i -E 'SOCKS5_%s|brook_socks_%s' >/dev/null",
+                                                appname, i, i)) == 0
     end
     luci.http.prepare_content("application/json")
     luci.http.write_json(e)
@@ -199,6 +189,9 @@ function ping_node()
     if luci.sys.exec("echo -n `uci -q get %s.@global_other[0].use_tcping`" %
                          appname) == "1" and
         luci.sys.exec("echo -n $(command -v tcping)") ~= "" then
+        luci.sys.call(string.format(
+                          "ps -w | grep 'tcping -q -c 1 -i 1 -p %s %s' | grep -v grep | awk '{print $1}' | xargs kill -9 > /dev/null",
+                          port, address))
         e.ping = luci.sys.exec(string.format(
                                    "echo -n $(tcping -q -c 1 -i 1 -p %s %s 2>&1 | grep -o 'time=[0-9]*' | awk -F '=' '{print$2}')",
                                    port, address))
@@ -274,7 +267,8 @@ end
 
 function update_rules()
     local update = luci.http.formvalue("update")
-    luci.sys.call("lua /usr/share/passwall/rule_update.lua log '" .. update .. "' > /dev/null 2>&1 &")
+    luci.sys.call("lua /usr/share/passwall/rule_update.lua log '" .. update ..
+                      "' > /dev/null 2>&1 &")
 end
 
 function kcptun_check()
