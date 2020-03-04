@@ -43,7 +43,7 @@ jobs:
     - name: Clone source code
       run: |
         git clone --depth 1 https://github.com/Lienol/openwrt-package Lienol
-        mv -vf Lienol/lienol/luci-app-passwall ../src
+        mv -vf Lienol/lienol/luci-app-passwall/ ../src/
         
     - name: Prepare targets
       id: po2lmo
